@@ -7,44 +7,28 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: set up JDK 17
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Create local.properties
-        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
-
-      - name: Install SDK components
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          yes | sdkmanager "platforms;android-34" "build-tools;34.0.0" 2>&1
-          echo "SDK install done"
-
-      - name: Test Gradle
-        run: |
-          ./gradlew --version 2>&1
-          echo "VERSION_EXIT=$?"
-
       - name: Build APK
         run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "ANDROID_HOME=$ANDROID_HOME"
           ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
           EXIT_CODE=${PIPESTATUS[0]}
           cp /tmp/build.log $GITHUB_WORKSPACE/build-log.txt
-          echo "Full build log saved as artifact 'build-log'"
-          # Upload log to dpaste for debugging
-          cat /tmp/build.log | curl -s -X POST -d @- https://dpaste.com/api/ 2>&1
+          echo "BUILD_LOG_BEGIN"
+          tail -50 /tmp/build.log
+          echo "BUILD_LOG_END"
           exit $EXIT_CODE
 
       - name: Upload build log
