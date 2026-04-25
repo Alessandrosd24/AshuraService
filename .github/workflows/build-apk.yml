@@ -21,18 +21,25 @@ jobs:
 
       - name: Install Android SDK
         run: |
+          set -x
+          echo "HOME=$HOME"
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
           mkdir -p $HOME/android
           cd $HOME/android
-          curl -sL -o cmdline.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          curl -v -o cmdline.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip 2>&1 | head -20
+          echo "CURL_EXIT=$?"
+          ls -lh cmdline.zip
           unzip -q cmdline.zip
+          ls -la
           mv cmdline-tools latest 2>/dev/null || true
-          export PATH="$HOME/android/latest/bin:$PATH"
+          ls latest/bin/ 2>/dev/null || echo "No bin dir"
           export ANDROID_HOME="$HOME/android"
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+          yes | "$HOME/android/latest/bin/sdkmanager" --licenses 2>&1 | tail -3
+          "$HOME/android/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" 2>&1 | tail -5
           echo "ANDROID_HOME=$HOME/android" >> $GITHUB_ENV
           echo "$HOME/android/latest/bin" >> $GITHUB_PATH
           echo "sdk.dir=$HOME/android" > $GITHUB_WORKSPACE/local.properties
+          echo "SDK setup done!"
 
       - name: Build
         run: |
