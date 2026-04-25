@@ -22,9 +22,22 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install SDK platforms
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls -la $ANDROID_HOME/
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          ls -la "$SDKMANAGER" 2>/dev/null || SDKMANAGER="$ANDROID_HOME/tools/bin/sdkmanager"
+          which sdkmanager 2>/dev/null && SDKMANAGER="sdkmanager" || true
+          echo "Using: $SDKMANAGER"
+          yes | "$SDKMANAGER" --list 2>&1 | head -3 || echo "SDKMANAGER_LIST_FAILED"
+          yes | "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" 2>&1 || echo "SDKMANAGER_INSTALL_FAILED"
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          ls -la $ANDROID_HOME/platforms/ 2>/dev/null && echo "PLATFORMS OK" || echo "NO PLATFORMS"
+
       - name: Build APK
         run: |
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
-          # Try to resolve plugin first
+          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "NO PLATFORMS"
+          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null || echo "NO BUILD-TOOLS"
           ./gradlew --no-daemon --stacktrace assembleDebug 2>&1
           echo "EXIT_CODE=$?"
