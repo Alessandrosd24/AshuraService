@@ -25,11 +25,27 @@ jobs:
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
+      - name: Test Gradle
+        run: |
+          ./gradlew --version 2>&1 | tee /tmp/gradle-version.log
+          echo "VERSION_EXIT=${PIPESTATUS[0]}"
+          
       - name: Build APK
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
-          ls -la
-          ./gradlew assembleDebug --no-daemon 2>&1
+          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "NO PLATFORMS"
+          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null || echo "NO BUILD-TOOLS"
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          cp /tmp/build.log $GITHUB_WORKSPACE/build-log.txt
+          exit $EXIT_CODE
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build-log.txt
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
