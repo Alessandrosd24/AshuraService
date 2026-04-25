@@ -34,12 +34,17 @@ jobs:
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
       - name: Build APK
-        run: ./gradlew assembleDebug
+        run: |
+          echo "=== Starting Gradle build ==="
+          ls -la gradlew gradle/wrapper/
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1
+          echo "=== Build exit code: $? ==="
 
       - name: List APK
         run: find app/build -name "*.apk" -ls 2>/dev/null || echo "No APK found"
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: AshuraAPK
