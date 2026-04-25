@@ -10,38 +10,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK (manual)
+      - name: Install Android SDK
         run: |
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          cd $HOME/android-sdk/cmdline-tools
-          curl -sL -o cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
-          unzip -qo cmdline-tools.zip
+          mkdir -p $HOME/android
+          cd $HOME/android
+          curl -sL -o cmdline.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q cmdline.zip
           mv cmdline-tools latest 2>/dev/null || true
-          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-
-      - name: Install SDK components
-        run: |
+          export PATH="$HOME/android/latest/bin:$PATH"
+          export ANDROID_HOME="$HOME/android"
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" 2>&1 | tail -3
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+          echo "ANDROID_HOME=$HOME/android" >> $GITHUB_ENV
+          echo "$HOME/android/latest/bin" >> $GITHUB_PATH
+          echo "sdk.dir=$HOME/android" > $GITHUB_WORKSPACE/local.properties
 
-      - name: Create local.properties
-        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
-
-      - name: Build APK
-        run: ./gradlew assembleDebug 2>&1
+      - name: Build
+        run: |
+          export ANDROID_HOME="$HOME/android"
+          # Use gradle wrapper with full output
+          chmod +x gradlew
+          ./gradlew assembleDebug --full-stacktrace 2>&1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: AshuraAPK
-          path: app/build/outputs/apk/**/*.apk
+          path: app/build/outputs/apk/debug/*.apk
