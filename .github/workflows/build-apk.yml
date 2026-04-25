@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -19,27 +19,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Build APK
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
-          EXIT_CODE=${PIPESTATUS[0]}
-          cp /tmp/build.log $GITHUB_WORKSPACE/build-log.txt
-          echo "BUILD_LOG_BEGIN"
-          tail -50 /tmp/build.log
-          echo "BUILD_LOG_END"
-          exit $EXIT_CODE
-
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build-log.txt
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: AshuraAPK
-          path: app/build/outputs/apk/debug/*.apk
+          # Try to resolve plugin first
+          ./gradlew --no-daemon --stacktrace assembleDebug 2>&1
+          echo "EXIT_CODE=$?"
