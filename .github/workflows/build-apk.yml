@@ -19,46 +19,36 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Check pre-installed tools
+      - name: Set up Android SDK
         run: |
-          echo "=== Which aapt ==="
-          which aapt 2>/dev/null || echo "No aapt"
-          echo "=== ANDROID_HOME ==="
+          # ubuntu-latest incluye Android SDK en $ANDROID_HOME
           echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          echo "=== SDK dirs ==="
-          ls -la /usr/local/android-sdk/ 2>/dev/null || ls -la /opt/android-sdk/ 2>/dev/null || echo "No standard SDK dirs"
-          ls -la $HOME/.android/ 2>/dev/null || echo "No ~/.android"
-          
-      - name: Install Android SDK + platforms
-        run: |
-          export ANDROID_HOME="$HOME/android-sdk"
-          mkdir -p $ANDROID_HOME/cmdline-tools
-          cd $ANDROID_HOME/cmdline-tools
-          echo "Downloading cmdline-tools..."
-          curl -sLo tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          ls -lh tools.zip
-          echo "Extracting..."
-          unzip -qo tools.zip && echo "Extract OK" || echo "Extract FAILED"
-          rm -f tools.zip
-          mv cmdline-tools latest
-          ls -la latest/bin/
-          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
-          echo "Testing sdkmanager..."
-          java -version 2>&1
-          sdkmanager --version 2>&1 || echo "SDKMANAGER FAILED"
-          echo "Installing platforms..."
-          yes | sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-34" "build-tools;34.0.0" 2>&1
-          echo "=== SDK INSTALL COMPLETE ==="
-          ls -la $ANDROID_HOME/platforms/ 2>/dev/null && echo "HAS PLATFORMS" || echo "NO PLATFORMS"
-          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null && echo "HAS BUILD-TOOLS" || echo "NO BUILD-TOOLS"
-          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "sdk.dir=$ANDROID_HOME" > $GITHUB_WORKSPACE/local.properties
 
-      - name: Build APK
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
+          # Agregar sdkmanager al PATH (múltiples ubicaciones posibles)
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/cmdline-tools/bin:$ANDROID_HOME/tools/bin:$PATH"
+
+          # Aceptar licencias sin interacción
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+
+          # Instalar plataforma y build-tools requeridos
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+          # Escribir sdk.dir para Gradle
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
           cat local.properties
-          ./gradlew --no-daemon --stacktrace assembleDebug 2>&1
-          echo "EXIT_CODE=$?"
+
+          # Persistir PATH para el siguiente step
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/tools/bin" >> $GITHUB_PATH
+
+      - name: Build Debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ashura-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
