@@ -19,25 +19,43 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install SDK platforms
+      - name: Install Android SDK + platforms
         run: |
+          # Setup SDK
+          export ANDROID_HOME="$HOME/android-sdk"
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          cd $ANDROID_HOME/cmdline-tools
+          curl -sL -o tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q tools.zip
+          rm tools.zip
+          mv cmdline-tools latest
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          
+          # Verify tools
           echo "ANDROID_HOME=$ANDROID_HOME"
-          ls -la $ANDROID_HOME/
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          ls -la "$SDKMANAGER" 2>/dev/null || SDKMANAGER="$ANDROID_HOME/tools/bin/sdkmanager"
-          which sdkmanager 2>/dev/null && SDKMANAGER="sdkmanager" || true
-          echo "Using: $SDKMANAGER"
-          yes | "$SDKMANAGER" --list 2>&1 | head -3 || echo "SDKMANAGER_LIST_FAILED"
-          yes | "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" 2>&1 || echo "SDKMANAGER_INSTALL_FAILED"
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
-          ls -la $ANDROID_HOME/platforms/ 2>/dev/null && echo "PLATFORMS OK" || echo "NO PLATFORMS"
+          ls -la $ANDROID_HOME/cmdline-tools/latest/bin/
+          
+          # Accept licenses
+          yes | sdkmanager --sdk_root=$ANDROID_HOME --licenses > /dev/null 2>&1 || true
+          
+          # Install platforms and build-tools
+          echo "Installing platforms..."
+          sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-34" "build-tools;34.0.0" 2>&1 | tail -5
+          
+          # Verify
+          echo "=== PLATFORMS ==="
+          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "NO PLATFORMS DIR"
+          echo "=== BUILD TOOLS ==="
+          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null || echo "NO BUILD-TOOLS DIR"
+          
+          # Set for next steps
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "sdk.dir=$ANDROID_HOME" >> $GITHUB_WORKSPACE/local.properties
 
       - name: Build APK
         run: |
-          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "NO PLATFORMS"
-          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null || echo "NO BUILD-TOOLS"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          cat local.properties
           ./gradlew --no-daemon --stacktrace assembleDebug 2>&1
           echo "EXIT_CODE=$?"
