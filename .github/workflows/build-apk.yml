@@ -21,31 +21,29 @@ jobs:
 
       - name: Install Android SDK
         run: |
-          set -x
-          echo "HOME=$HOME"
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
           mkdir -p $HOME/android
           cd $HOME/android
-          curl -v -o cmdline.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip 2>&1 | head -20
-          echo "CURL_EXIT=$?"
-          ls -lh cmdline.zip
+          curl -sL -o cmdline.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
           unzip -q cmdline.zip
-          ls -la
           mv cmdline-tools latest 2>/dev/null || true
-          ls latest/bin/ 2>/dev/null || echo "No bin dir"
           export ANDROID_HOME="$HOME/android"
-          yes | "$HOME/android/latest/bin/sdkmanager" --licenses 2>&1 | tail -3
-          "$HOME/android/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" 2>&1 | tail -5
+          yes | "$ANDROID_HOME/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$ANDROID_HOME/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"
           echo "ANDROID_HOME=$HOME/android" >> $GITHUB_ENV
           echo "$HOME/android/latest/bin" >> $GITHUB_PATH
           echo "sdk.dir=$HOME/android" > $GITHUB_WORKSPACE/local.properties
-          echo "SDK setup done!"
+
+      - name: Install Gradle
+        run: |
+          curl -sL -o /tmp/gradle.zip "https://services.gradle.org/distributions/gradle-8.5-bin.zip"
+          unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-8.5/bin" >> $GITHUB_PATH
+          gradle --version 2>&1 | head -3
 
       - name: Build APK
         run: |
           export ANDROID_HOME="$HOME/android"
-          java -jar gradle/wrapper/gradle-wrapper.jar assembleDebug 2>&1
-          echo "BUILD_EXIT=$?"
+          gradle assembleDebug --stacktrace 2>&1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
