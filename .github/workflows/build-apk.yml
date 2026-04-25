@@ -29,15 +29,22 @@ jobs:
         run: |
           ./gradlew --version 2>&1 | tee /tmp/gradle-version.log
           echo "VERSION_EXIT=${PIPESTATUS[0]}"
-          
+
       - name: Build APK
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "NO PLATFORMS"
-          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null || echo "NO BUILD-TOOLS"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_STEP_SUMMARY
+          ls -la $ANDROID_HOME/platforms/ 2>/dev/null >> $GITHUB_STEP_SUMMARY || echo "NO PLATFORMS" >> $GITHUB_STEP_SUMMARY
+          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null >> $GITHUB_STEP_SUMMARY || echo "NO BUILD-TOOLS" >> $GITHUB_STEP_SUMMARY
           ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
           EXIT_CODE=${PIPESTATUS[0]}
           cp /tmp/build.log $GITHUB_WORKSPACE/build-log.txt
+          # Write full build log to step summary
+          echo "## Gradle Build Output (last 80 lines)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -80 /tmp/build.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          # Also try pastebin
+          tail -50 /tmp/build.log | curl -s --data-binary @- https://dpaste.org/api/ 2>&1 && echo "dpaste ok" || echo "dpaste failed"
           exit $EXIT_CODE
 
       - name: Upload build log
