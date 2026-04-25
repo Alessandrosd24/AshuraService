@@ -41,15 +41,11 @@ jobs:
           echo "sdk.dir=$HOME/android" > $GITHUB_WORKSPACE/local.properties
           echo "SDK setup done!"
 
-      - name: Build
+      - name: Build APK
         run: |
           export ANDROID_HOME="$HOME/android"
-          echo "SDK: $ANDROID_HOME"
-          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "no platforms"
-          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null || echo "no build-tools"
-          # Try running the wrapper manually to see the error
-          java -version 2>&1
-          java -jar gradle/wrapper/gradle-wrapper.jar --version 2>&1 || echo "Wrapper jar failed"
+          java -jar gradle/wrapper/gradle-wrapper.jar assembleDebug 2>&1
+          echo "BUILD_EXIT=$?"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
