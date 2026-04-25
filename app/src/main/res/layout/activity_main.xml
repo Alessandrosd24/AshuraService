@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="#FF1A1A2E">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="⚡ ASHURA"
+        android:textSize="48sp"
+        android:textColor="#FF00D4FF"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Agente de voz en segundo plano"
+        android:textSize="14sp"
+        android:textColor="#FF888888"
+        android:layout_marginBottom="48dp" />
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Detenido"
+        android:textSize="18sp"
+        android:textColor="#FFFFFFFF"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btnToggle"
+        android:layout_width="260dp"
+        android:layout_height="56dp"
+        android:text="INICIAR ASHURA"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#FF1A1A2E"
+        android:backgroundTint="#FF00D4FF"
+        android:background="@drawable/btn_rounded" />
+
+</LinearLayout>
