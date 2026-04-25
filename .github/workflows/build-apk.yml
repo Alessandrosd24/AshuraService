@@ -19,39 +19,42 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Check pre-installed tools
+        run: |
+          echo "=== Which aapt ==="
+          which aapt 2>/dev/null || echo "No aapt"
+          echo "=== ANDROID_HOME ==="
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          echo "=== SDK dirs ==="
+          ls -la /usr/local/android-sdk/ 2>/dev/null || ls -la /opt/android-sdk/ 2>/dev/null || echo "No standard SDK dirs"
+          ls -la $HOME/.android/ 2>/dev/null || echo "No ~/.android"
+          
       - name: Install Android SDK + platforms
         run: |
-          # Setup SDK
           export ANDROID_HOME="$HOME/android-sdk"
           mkdir -p $ANDROID_HOME/cmdline-tools
           cd $ANDROID_HOME/cmdline-tools
-          curl -sL -o tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-          unzip -q tools.zip
-          rm tools.zip
+          echo "Downloading cmdline-tools..."
+          curl -sLo tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          ls -lh tools.zip
+          echo "Extracting..."
+          unzip -qo tools.zip && echo "Extract OK" || echo "Extract FAILED"
+          rm -f tools.zip
           mv cmdline-tools latest
+          ls -la latest/bin/
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
-          
-          # Verify tools
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          ls -la $ANDROID_HOME/cmdline-tools/latest/bin/
-          
-          # Accept licenses
-          yes | sdkmanager --sdk_root=$ANDROID_HOME --licenses > /dev/null 2>&1 || true
-          
-          # Install platforms and build-tools
+          echo "Testing sdkmanager..."
+          java -version 2>&1
+          sdkmanager --version 2>&1 || echo "SDKMANAGER FAILED"
           echo "Installing platforms..."
-          sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-34" "build-tools;34.0.0" 2>&1 | tail -5
-          
-          # Verify
-          echo "=== PLATFORMS ==="
-          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "NO PLATFORMS DIR"
-          echo "=== BUILD TOOLS ==="
-          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null || echo "NO BUILD-TOOLS DIR"
-          
-          # Set for next steps
+          yes | sdkmanager --sdk_root=$ANDROID_HOME "platforms;android-34" "build-tools;34.0.0" 2>&1
+          echo "=== SDK INSTALL COMPLETE ==="
+          ls -la $ANDROID_HOME/platforms/ 2>/dev/null && echo "HAS PLATFORMS" || echo "NO PLATFORMS"
+          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null && echo "HAS BUILD-TOOLS" || echo "NO BUILD-TOOLS"
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "sdk.dir=$ANDROID_HOME" >> $GITHUB_WORKSPACE/local.properties
+          echo "sdk.dir=$ANDROID_HOME" > $GITHUB_WORKSPACE/local.properties
 
       - name: Build APK
         run: |
