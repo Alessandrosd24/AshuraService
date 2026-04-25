@@ -44,9 +44,12 @@ jobs:
       - name: Build
         run: |
           export ANDROID_HOME="$HOME/android"
-          # Use gradle wrapper with full output
-          chmod +x gradlew
-          ./gradlew assembleDebug --full-stacktrace 2>&1
+          echo "SDK: $ANDROID_HOME"
+          ls -la $ANDROID_HOME/platforms/ 2>/dev/null || echo "no platforms"
+          ls -la $ANDROID_HOME/build-tools/ 2>/dev/null || echo "no build-tools"
+          # Try running the wrapper manually to see the error
+          java -version 2>&1
+          java -jar gradle/wrapper/gradle-wrapper.jar --version 2>&1 || echo "Wrapper jar failed"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
